@@ -1,46 +1,53 @@
 class consul_replicate::install {
-  
+
   exec { 'Download consul-replicate binary':
-    command => "wget -q --no-check-certificate ${consul_replicate::download_url} -O ${consul_replicate::bin_dir}/consul-replicate-${consul_replicate::version}",
-    path    => '/usr/bin:/usr/local/bin:/bin',
+    command => "wget -q --no-check-certificate ${consul_replicate::download_url} -O /tmp/consul-replicate-${consul_replicate::version}.tar.gz",
+    path    => $::path,
     unless  => "test -s ${consul_replicate::bin_dir}/consul-replicate-${consul_replicate::version}",
-    notify  => Service['consul-replicate'],
-  } ->
+    } ->
 
-  file { "${consul_replicate::bin_dir}/consul-replicate-${consul_replicate::version}":
-    ensure => file,
-    owner  => 'root',
-    group  => 'root',
-    mode   => '0555',
-  } ->
+    exec { 'Extract consul-replicate binary':
+      command     => "tar -xvf /tmp/consul-replicate-${consul_replicate::version}.tar.gz -C /tmp/ --strip=1 && mv -f /tmp/consul-replicate ${consul_replicate::bin_dir}/consul-replicate-${consul_replicate::version}",
+      path        => $::path,
+      refreshonly => true,
+      subscribe   => Exec['Download consul-replicate binary'],
+      notify      => Service['consul-replicate'],
+      } ->
 
-  file { "${consul_replicate::bin_dir}/consul-replicate":
-    ensure  => link,
-    target  => "${consul_replicate::bin_dir}/consul-replicate-${consul_replicate::version}",
-    require => File["${consul_replicate::bin_dir}/consul-replicate-${consul_replicate::version}"],
-  } ->
+      file { "${consul_replicate::bin_dir}/consul-replicate-${consul_replicate::version}":
+        ensure => file,
+        owner  => 'root',
+        group  => 'root',
+        mode   => '0555',
+        } ->
 
-  file { '/etc/init/consul-replicate.conf':
-    ensure  => present,
-    mode    => '0444',
-    owner   => 'root',
-    group   => 'root',
-    content => template('consul_replicate/consul-replicate.upstart.erb')
-  } ->
-  
-  file { '/etc/init.d/consul-replicate':
-    ensure => link,
-    target => '/lib/init/upstart-job',
-    owner  => root,
-    group  => root,
-    mode   => '0755',
-  }
+        file { "${consul_replicate::bin_dir}/consul-replicate":
+          ensure  => link,
+          target  => "${consul_replicate::bin_dir}/consul-replicate-${consul_replicate::version}",
+          require => File["${consul_replicate::bin_dir}/consul-replicate-${consul_replicate::version}"],
+          } ->
 
-  group { $consul_replicate::group:
-    ensure => present
-  }
+          file { '/etc/init/consul-replicate.conf':
+            ensure  => present,
+            mode    => '0444',
+            owner   => 'root',
+            group   => 'root',
+            content => template('consul_replicate/consul-replicate.upstart.erb')
+            } ->
+            
+            file { '/etc/init.d/consul-replicate':
+              ensure => link,
+              target => '/lib/init/upstart-job',
+              owner  => root,
+              group  => root,
+              mode   => '0755',
+            }
 
-  user { $consul_replicate::user:
-    ensure  => present,
-  }
+            group { $consul_replicate::group:
+              ensure => present
+            }
+
+            user { $consul_replicate::user:
+              ensure  => present,
+            }
 }
