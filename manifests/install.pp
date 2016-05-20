@@ -1,13 +1,13 @@
 class consul_replicate::install {
 
   exec { 'Download consul-replicate binary':
-    command => "wget -q --no-check-certificate ${consul_replicate::download_url} -O /tmp/consul-replicate-${consul_replicate::version}.tar.gz",
+    command => "wget -q --no-check-certificate ${consul_replicate::download_url} -O /tmp/consul-replicate-${consul_replicate::version}.zip",
     path    => $::path,
     unless  => "test -s ${consul_replicate::bin_dir}/consul-replicate-${consul_replicate::version}",
     } ->
 
     exec { 'Extract consul-replicate binary':
-      command     => "tar -xvf /tmp/consul-replicate-${consul_replicate::version}.tar.gz -C /tmp/ --strip=1 && mv -f /tmp/consul-replicate ${consul_replicate::bin_dir}/consul-replicate-${consul_replicate::version}",
+      command     => "unzip /tmp/consul-replicate-${consul_replicate::version}.zip && mv -f /tmp/consul-replicate ${consul_replicate::bin_dir}/consul-replicate-${consul_replicate::version}",
       path        => $::path,
       refreshonly => true,
       subscribe   => Exec['Download consul-replicate binary'],
